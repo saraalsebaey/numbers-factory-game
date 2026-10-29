@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>The Little Factory</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;900&family=Fredoka+One&family=Nunito:wght@600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #FF6B6B;
+            --secondary: #4ECDC4;
+            --accent: #FFE66D;
+            --bg-color: #F7FFF7;
+            --text-color: #2F3542;
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #2c3e50;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        /* Arabic Styles */
+        body.ar {
+            font-family: 'Cairo', sans-serif;
+            direction: rtl;
+        }
+        body.ar h1, body.ar h2, body.ar h3, body.ar h4, body.ar .title-font, body.ar .btn-primary, body.ar .btn-option, body.ar .counter-display, body.ar .speech-bubble {
+            font-family: 'Cairo', sans-serif;
+        }
+
+        h1, h2, h3, h4, .title-font {
+            font-family: 'Fredoka One', cursive;
+        }
+
+        #game-container {
+            width: 100%;
+            max-width: 1024px;
+            height: 100%;
+            max-height: 768px;
+            background-color: var(--bg-color);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        @media (min-width: 768px) {
+            #game-container {
+                height: 90vh;
+                border-radius: 24px;
+            }
+        }
+
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            box-sizing: border-box;
+            background-size: cover;
+            background-position: center;
+        }
+        .screen.active {
+            display: flex;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .bg-pattern {
+            background-image: radial-gradient(#4ECDC4 10%, transparent 10%), radial-gradient(#4ECDC4 10%, transparent 10%);
+            background-size: 40px 40px;
+            background-position: 0 0, 20px 20px;
+            opacity: 0.1;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0); opacity: 0; }
+            70% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes popOut {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(0); opacity: 0; }
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        @keyframes pulse-btn {
+            0% { transform: scale(1); box-shadow: 0 4px 0 #d9534f; }
+            50% { transform: scale(1.05); box-shadow: 0 8px 0 #d9534f; }
+            100% { transform: scale(1); box-shadow: 0 4px 0 #d9534f; }
+        }
+
+        @keyframes conveyorMove {
+            from { background-position: 0 0; }
+            to { background-position: -60px 0; }
+        }
+        body.ar .conveyor-belt {
+            animation: conveyorMoveAr 2s linear infinite;
+        }
+        @keyframes conveyorMoveAr {
+            from { background-position: 0 0; }
+            to { background-position: 60px 0; }
+        }
+
+        @keyframes highlightPop {
+            0% { transform: scale(1); filter: brightness(1); }
+            50% { transform: scale(1.3); filter: brightness(1.2) drop-shadow(0 0 10px yellow); }
+            100% { transform: scale(1); filter: brightness(1); }
+        }
+
+        @keyframes gearSpin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+            border-radius: 50px;
+            padding: 15px 40px;
+            font-size: 2rem;
+            font-family: 'Fredoka One', cursive;
+            border: 4px solid #fff;
+            box-shadow: 0 8px 0 #d35400, 0 15px 20px rgba(0,0,0,0.2);
+            transition: all 0.1s ease;
+            cursor: pointer;
+            text-transform: uppercase;
+            position: relative;
+            z-index: 10;
+        }
+        .btn-primary:active {
+            transform: translateY(8px);
+            box-shadow: 0 0 0 #d35400, 0 5px 10px rgba(0,0,0,0.2);
+        }
+
+        .btn-option {
+            background-color: #3498db;
+            color: white;
+            border-radius: 20px;
+            padding: 20px 40px;
+            font-size: 3rem;
+            font-family: 'Fredoka One', cursive;
+            border: 4px solid #fff;
+            box-shadow: 0 8px 0 #2980b9;
+            cursor: pointer;
+            transition: all 0.1s;
+        }
+        .btn-option:active {
+            transform: translateY(8px);
+            box-shadow: 0 0 0 #2980b9;
+        }
+
+        .speech-bubble {
+            background: white;
+            border-radius: 20px;
+            padding: 15px 25px;
+            position: relative;
+            border: 4px solid var(--primary);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--text-color);
+            text-align: center;
+            max-width: 80%;
+            z-index: 10;
+        }
+        .speech-bubble::after {
+            content: '';
+            position: absolute;
+            bottom: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 15px 15px 0;
+            border-style: solid;
+            border-color: var(--primary) transparent transparent transparent;
+            display: block;
+            width: 0;
+        }
+        .speech-bubble::before {
+            content: '';
+            position: absolute;
+            bottom: -9px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 10px 10px 0;
+            border-style: solid;
+            border-color: white transparent transparent transparent;
+            display: block;
+            width: 0;
+            z-index: 1;
+        }
+
+        .conveyor-belt {
+            height: 80px;
+            width: 100%;
+            background: repeating-linear-gradient(
+                90deg,
+                #7f8c8d,
+                #7f8c8d 30px,
+                #95a5a6 30px,
+                #95a5a6 60px
+            );
+            border-top: 5px solid #2c3e50;
+            border-bottom: 10px solid #2c3e50;
+            border-radius: 10px;
+            animation: conveyorMove 2s linear infinite;
+            position: relative;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            gap: 15px;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+        .conveyor-belt::-webkit-scrollbar {
+            display: none;
+        }
+
+        .tap-object {
+            font-size: 4rem;
+            cursor: pointer;
+            user-select: none;
+            transition: transform 0.1s;
+            filter: drop-shadow(0 5px 5px rgba(0,0,0,0.2));
+            animation: popIn 0.3s ease-out;
+            flex-shrink: 0;
+        }
+        .tap-object:active {
+            transform: scale(0.9);
+        }
+        .tap-object.collected {
+            animation: popOut 0.3s forwards;
+            pointer-events: none;
+        }
+
+        .box-container {
+            width: 180px;
+            height: 150px;
+            position: relative;
+            margin: 0 auto;
+        }
+        .box-back {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 80%;
+            background-color: #d35400;
+            border-radius: 10px 10px 0 0;
+            z-index: 1;
+        }
+        .box-front {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 70%;
+            background-color: #e67e22;
+            border-radius: 5px;
+            z-index: 3;
+            box-shadow: inset 0 5px 0 rgba(255,255,255,0.2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: rgba(0,0,0,0.2);
+            font-size: 2rem;
+            font-weight: bold;
+        }
+        .box-items {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            display: flex;
+            flex-wrap: wrap-reverse;
+            justify-content: center;
+            align-content: flex-start;
+            padding: 10px;
+            gap: 5px;
+        }
+        .box-item {
+            font-size: 2.5rem;
+            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .counter-display {
+            background: white;
+            border: 4px solid var(--primary);
+            border-radius: 20px;
+            padding: 10px 30px;
+            font-size: 3.5rem;
+            font-family: 'Fredoka One', cursive;
+            color: var(--primary);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .confetti {
+            position: absolute;
+            width: 15px;
+            height: 15px;
+            background-color: #f00;
+            opacity: 0;
+            z-index: 50;
+        }
+
+        .level-dots {
+            display: flex;
+            gap: 10px;
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 20;
+        }
+        body.ar .level-dots {
+            left: auto;
+            right: 20px;
+        }
+        .dot {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: #ccc;
+            border: 2px solid white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .dot.active { background-color: var(--accent); }
+        .dot.completed { background-color: var(--secondary); }
+
+        .controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 20;
+            display: flex;
+            gap: 15px;
+        }
+        body.ar .controls {
+            right: auto;
+            left: 20px;
+        }
+        .control-btn {
+            background: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #ccc;
+            transition: all 0.1s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .control-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 #ccc;
+        }
+        
+        #btn-lang {
+            font-weight: 900;
+            color: #2980b9;
+            font-size: 1.8rem;
+            font-family: 'Cairo', sans-serif;
+            border: 3px solid #3498db;
+        }
+
+        .gear {
+            position: absolute;
+            opacity: 0.1;
+            z-index: 0;
+            animation: gearSpin 10s linear infinite;
+        }
+
+        .character {
+            width: 150px;
+            height: 150px;
+            animation: bounce 2s infinite ease-in-out;
+            z-index: 5;
+        }
+
+        #check-items-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            max-width: 600px;
+            margin: 20px 0;
+            min-height: 120px;
+        }
+        .check-item {
+            font-size: 4rem;
+            filter: drop-shadow(0 5px 5px rgba(0,0,0,0.2));
+            transition: all 0.3s;
+        }
+
+        .highlighted {
+            animation: highlightPop 1s ease-in-out;
+        }
+    </style>
+</head>
+<body class="en">
+
+    <div id="game-container">
+        <div class="bg-pattern"></div>
+        
+        <!-- Background Gears -->
+        <svg class="gear" style="top: -50px; left: -50px; width: 200px; height: 200px; fill: var(--primary);" viewBox="0 0 100 100"><path d="M94.6 59c-.5-1.9-2.3-3.2-4.3-3.2h-3.4c-.6-2.5-1.5-4.8-2.6-7l2.4-2.4c1.4-1.4 1.7-3.6.7-5.3l-5.6-9.7c-1-1.7-3.1-2.3-4.8-1.4l-3 1.7c-1.9-1.6-4.1-3-6.4-4.1V24.3c0-2-1.3-3.7-3.2-4.3l-11.2-3c-1.9-.5-3.9.4-4.6 2.3l-1.2 3.2c-2.5.5-4.9 1.3-7.1 2.3l-2.2-2.5c-1.3-1.5-3.5-1.9-5.3-1l-9.7 5.6c-1.7 1-2.3 3.1-1.4 4.8l1.7 3c-1.6 1.9-3 4.1-4.1 6.4h-3.3c-2 0-3.7 1.3-4.3 3.2L1.8 55.4c-.5 1.9.4 3.9 2.3 4.6l3.2 1.2c.5 2.5 1.3 4.9 2.3 7.1l-2.5 2.2c-1.5 1.3-1.9 3.5-1 5.3l5.6 9.7c1 1.7 3.1 2.3 4.8 1.4l3-1.7c1.9 1.6 4.1 3 6.4 4.1v3.3c0 2 1.3 3.7 3.2 4.3l11.2 3c1.9.5 3.9-.4 4.6-2.3l1.2-3.2c2.5-.5 4.9-1.3 7.1-2.3l2.2 2.5c1.3 1.5 3.5 1.9 5.3 1l9.7-5.6c1.7-1 2.3-3.1 1.4-4.8l-1.7-3c1.6-1.9 3-4.1 4.1-6.4h3.3c2 0 3.7-1.3 4.3-3.2l3-11.2c.5-1.8-.4-3.9-2.3-4.6zm-44.6 9.2c-10 0-18.2-8.1-18.2-18.2S40 31.8 50 31.8 68.2 40 68.2 50 60 68.2 50 68.2z"/></svg>
+        <svg class="gear" style="bottom: -50px; right: -50px; width: 150px; height: 150px; fill: var(--secondary); animation-direction: reverse;" viewBox="0 0 100 100"><path d="M94.6 59c-.5-1.9-2.3-3.2-4.3-3.2h-3.4c-.6-2.5-1.5-4.8-2.6-7l2.4-2.4c1.4-1.4 1.7-3.6.7-5.3l-5.6-9.7c-1-1.7-3.1-2.3-4.8-1.4l-3 1.7c-1.9-1.6-4.1-3-6.4-4.1V24.3c0-2-1.3-3.7-3.2-4.3l-11.2-3c-1.9-.5-3.9.4-4.6 2.3l-1.2 3.2c-2.5.5-4.9 1.3-7.1 2.3l-2.2-2.5c-1.3-1.5-3.5-1.9-5.3-1l-9.7 5.6c-1.7 1-2.3 3.1-1.4 4.8l1.7 3c-1.6 1.9-3 4.1-4.1 6.4h-3.3c-2 0-3.7 1.3-4.3 3.2L1.8 55.4c-.5 1.9.4 3.9 2.3 4.6l3.2 1.2c.5 2.5 1.3 4.9 2.3 7.1l-2.5 2.2c-1.5 1.3-1.9 3.5-1 5.3l5.6 9.7c1 1.7 3.1 2.3 4.8 1.4l3-1.7c1.9 1.6 4.1 3 6.4 4.1v3.3c0 2 1.3 3.7 3.2 4.3l11.2 3c1.9.5 3.9-.4 4.6-2.3l1.2-3.2c2.5-.5 4.9-1.3 7.1-2.3l2.2 2.5c1.3 1.5 3.5 1.9 5.3 1l9.7-5.6c1.7-1 2.3-3.1 1.4-4.8l-1.7-3c1.6-1.9 3-4.1 4.1-6.4h3.3c2 0 3.7-1.3 4.3-3.2l3-11.2c.5-1.8-.4-3.9-2.3-4.6zm-44.6 9.2c-10 0-18.2-8.1-18.2-18.2S40 31.8 50 31.8 68.2 40 68.2 50 60 68.2 50 68.2z"/></svg>
+
+        <!-- Global UI -->
+        <div class="level-dots" id="level-indicator">
+            <div class="dot active" id="dot-1"></div>
+            <div class="dot" id="dot-2"></div>
+            <div class="dot" id="dot-3"></div>
+        </div>
+        <div class="controls">
+            <!-- Language Toggle Button Added Here -->
+            <button class="control-btn" id="btn-lang" onclick="toggleLanguage()">ع</button>
+            <button class="control-btn" id="btn-restart" onclick="restartGame()">🔄</button>
+        </div>
+
+        <!-- Screen 1: Welcome -->
+        <div id="screen-welcome" class="screen active">
+            <h1 id="title-text" class="text-6xl md:text-7xl text-center text-white mb-6" style="text-shadow: 3px 3px 0 var(--primary), -1px -1px 0 var(--primary), 1px -1px 0 var(--primary), -1px 1px 0 var(--primary), 1px 1px 0 var(--primary);">
+                The Little<br>Factory
+            </h1>
+            
+            <svg class="character mb-8" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                <path d="M40 100 Q 100 20 160 100" fill="#FFC312" stroke="#F79F1F" stroke-width="5"/>
+                <rect x="30" y="95" width="140" height="15" rx="5" fill="#FFC312" stroke="#F79F1F" stroke-width="3"/>
+                <circle cx="100" cy="140" r="45" fill="#F8EFBA" stroke="#D980FA" stroke-width="3"/>
+                <circle cx="85" cy="130" r="6" fill="#2c3e50"/>
+                <circle cx="115" cy="130" r="6" fill="#2c3e50"/>
+                <path d="M80 150 Q 100 170 120 150" fill="none" stroke="#2c3e50" stroke-width="5" stroke-linecap="round"/>
+                <circle cx="70" cy="145" r="5" fill="#ff7675" opacity="0.6"/>
+                <circle cx="130" cy="145" r="5" fill="#ff7675" opacity="0.6"/>
+            </svg>
+
+            <h2 id="welcome-text" class="text-3xl text-gray-800 mb-8 font-bold text-center">Welcome, Little Worker!</h2>
+            <button id="btn-play" class="btn-primary" style="animation: pulse-btn 2s infinite;" onclick="startGame()">PLAY</button>
+        </div>
+
+        <!-- Screen 2: Receive Order -->
+        <div id="screen-order" class="screen">
+            <svg class="character" style="width: 120px; height: 120px;" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                <path d="M40 100 Q 100 20 160 100" fill="#FFC312" stroke="#F79F1F" stroke-width="5"/>
+                <rect x="30" y="95" width="140" height="15" rx="5" fill="#FFC312" stroke="#F79F1F" stroke-width="3"/>
+                <circle cx="100" cy="140" r="45" fill="#F8EFBA" stroke="#D980FA" stroke-width="3"/>
+                <circle cx="85" cy="130" r="6" fill="#2c3e50"/>
+                <circle cx="115" cy="130" r="6" fill="#2c3e50"/>
+                <path d="M75 145 Q 100 175 125 145" fill="none" stroke="#2c3e50" stroke-width="6" stroke-linecap="round"/>
+            </svg>
+
+            <div id="order-speech" class="speech-bubble mb-10 mt-4">
+                Hello, Worker! We have a new order!
+            </div>
+
+            <div class="bg-white rounded-3xl p-8 shadow-2xl border-8 border-yellow-300 flex flex-col items-center mb-8 transform rotate-2">
+                <h3 id="order-title" class="text-3xl text-gray-600 mb-4 font-bold">ORDER:</h3>
+                <div class="flex items-center gap-6">
+                    <span class="text-8xl title-font text-blue-500" id="order-number">7</span>
+                    <span class="text-7xl" id="order-emoji">🍎</span>
+                </div>
+                <h4 class="text-2xl mt-4 font-bold text-gray-700" id="order-text">Make 7 Apples!</h4>
+            </div>
+
+            <button id="btn-start-order" class="btn-primary" onclick="startProduction()">START ORDER</button>
+        </div>
+
+        <!-- Screen 3: Produce Objects -->
+        <div id="screen-produce" class="screen justify-between pb-10 pt-20">
+            <div class="counter-display flex items-center gap-4">
+                <span id="prod-count" class="text-5xl">0</span>
+                <span id="slash-text" class="text-gray-400 text-3xl">/</span>
+                <span id="prod-target" class="text-4xl text-gray-500">7</span>
+            </div>
+
+            <div class="w-full flex justify-center flex-grow items-center">
+                <div class="box-container" id="factory-box">
+                    <div class="box-back"></div>
+                    <div class="box-items" id="box-items-container"></div>
+                    <div id="box-front" class="box-front">BOX</div>
+                </div>
+            </div>
+
+            <div class="w-full px-4 md:px-12 mt-4 relative">
+                <div id="tap-speech" class="speech-bubble mb-6 mx-auto !w-max text-xl" style="padding: 10px 20px;">Tap to collect!</div>
+                <div class="conveyor-belt" id="conveyor-items"></div>
+            </div>
+        </div>
+
+        <!-- Screen 4: Quality Check -->
+        <div id="screen-check" class="screen">
+            <svg class="character" style="width: 120px; height: 120px;" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                <path d="M60 100 Q 100 50 140 100" fill="#95a5a6"/>
+                <circle cx="100" cy="130" r="45" fill="#F8EFBA" stroke="#D980FA" stroke-width="3"/>
+                <rect x="65" y="115" width="25" height="15" rx="3" fill="none" stroke="#2c3e50" stroke-width="3"/>
+                <rect x="110" y="115" width="25" height="15" rx="3" fill="none" stroke="#2c3e50" stroke-width="3"/>
+                <line x1="90" y1="122" x2="110" y2="122" stroke="#2c3e50" stroke-width="3"/>
+                <circle cx="77" cy="122" r="4" fill="#2c3e50"/>
+                <circle cx="122" cy="122" r="4" fill="#2c3e50"/>
+                <path d="M85 150 Q 100 160 115 150" fill="none" stroke="#2c3e50" stroke-width="4" stroke-linecap="round"/>
+            </svg>
+
+            <div class="speech-bubble mb-6 mt-4" id="check-speech">
+                Let's check our order!<br>How many did we make?
+            </div>
+
+            <div id="check-items-container" class="bg-white/50 rounded-3xl p-6 shadow-inner w-11/12"></div>
+
+            <div class="flex gap-6 mt-8 flex-row-reverse" id="answer-buttons"></div>
+        </div>
+
+        <!-- Screen 5: Success -->
+        <div id="screen-success" class="screen">
+            <div id="confetti-container" class="absolute inset-0 overflow-hidden pointer-events-none z-0"></div>
+            
+            <svg class="character mb-4" style="width: 160px; height: 160px; z-index: 10;" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                <path d="M40 100 Q 100 20 160 100" fill="#FFC312" stroke="#F79F1F" stroke-width="5"/>
+                <rect x="30" y="95" width="140" height="15" rx="5" fill="#FFC312" stroke="#F79F1F" stroke-width="3"/>
+                <circle cx="100" cy="140" r="45" fill="#F8EFBA" stroke="#D980FA" stroke-width="3"/>
+                <path d="M70 120 Q 85 110 100 120" fill="none" stroke="#2c3e50" stroke-width="5" stroke-linecap="round"/>
+                <path d="M100 120 Q 115 110 130 120" fill="none" stroke="#2c3e50" stroke-width="5" stroke-linecap="round"/>
+                <path d="M75 140 Q 100 180 125 140 Z" fill="#ff7675" stroke="#2c3e50" stroke-width="4"/>
+            </svg>
+
+            <h2 id="success-title" class="text-5xl text-white title-font mb-4 text-center z-10" style="text-shadow: 2px 2px 0 var(--primary);">Great Job, Little Worker!</h2>
+            <h3 class="text-3xl text-white font-bold mb-10 text-center z-10" id="success-message">Order complete!</h3>
+            
+            <button class="btn-primary z-10" id="btn-next-level" onclick="nextLevel()">NEXT ORDER</button>
+        </div>
+    </div>
+
+    <script>
+        // Language Translations
+        const translations = {
+            en: {
+                title: "The Little<br>Factory",
+                welcome: "Welcome, Little Worker!",
+                play: "PLAY",
+                newOrder: "Hello, Worker! We have a new order!",
+                orderTitle: "ORDER:",
+                makeOrder: "Make {n} {item}!",
+                challengeOrder: "Challenge! Make {n} {item}!",
+                startOrder: "START ORDER",
+                tapCollect: "Tap to collect!",
+                box: "BOX",
+                checkOrder: "Let's check our order!<br>How many {item} did we make?",
+                countTogether: "Let's count together!",
+                excellent: "Excellent! We made {n} {item}!",
+                greatJob: "Great Job, Little Worker!",
+                orderComplete: "Order complete!",
+                masterBuilder: "You are a Master Builder!<br>You know Number 7!",
+                nextOrder: "NEXT ORDER",
+                playAgain: "PLAY AGAIN",
+                langBtn: "ع",
+                slash: "/",
+                items: {
+                    'Apples': 'Apples',
+                    'Stars': 'Stars',
+                    'Cars': 'Cars',
+                    'Balloons': 'Balloons',
+                    'Cupcakes': 'Cupcakes',
+                    'Balls': 'Balls'
+                }
+            },
+            ar: {
+                title: "المصنع<br>الصغير",
+                welcome: "مرحباً أيها العامل الصغير!",
+                play: "إلعب",
+                newOrder: "أهلاً بك! لدينا طلب جديد!",
+                orderTitle: "الطلب:",
+                makeOrder: "اصنع {n} من {item}!",
+                challengeOrder: "تحدي! اصنع {n} من {item}!",
+                startOrder: "ابدأ الطلب",
+                tapCollect: "اضغط للجمع!",
+                box: "صندوق",
+                checkOrder: "هيا نراجع الطلب!<br>كم صنعنا من {item}؟",
+                countTogether: "هيا نعد معاً!",
+                excellent: "ممتاز! لقد صنعنا {n} من {item}!",
+                greatJob: "عمل رائع أيها البطل!",
+                orderComplete: "اكتمل الطلب!",
+                masterBuilder: "أنت بطل حقيقي!<br>أنت تعرف الرقم 7 جيداً!",
+                nextOrder: "الطلب التالي",
+                playAgain: "العب مرة أخرى",
+                langBtn: "EN",
+                slash: "من",
+                items: {
+                    'Apples': 'التفاح',
+                    'Stars': 'النجوم',
+                    'Cars': 'السيارات',
+                    'Balloons': 'البالونات',
+                    'Cupcakes': 'الكعك',
+                    'Balls': 'الكرات'
+                }
+            }
+        };
+
+        // Game State
+        const gameState = {
+            level: 1,
+            targetNumber: 0,
+            currentCount: 0,
+            currentEmoji: '',
+            emojiName: '',
+            isChecking: false,
+            language: 'en'
+        };
+
+        const objectsPool = [
+            { emoji: '🍎', name: 'Apples' },
+            { emoji: '⭐', name: 'Stars' },
+            { emoji: '🚗', name: 'Cars' },
+            { emoji: '🎈', name: 'Balloons' },
+            { emoji: '🧁', name: 'Cupcakes' },
+            { emoji: '⚽', name: 'Balls' }
+        ];
+
+        // Language Functions
+        function toLocalNumber(num) {
+            if (gameState.language === 'en') return num.toString();
+            const arabicDigits = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+            return num.toString().replace(/[0-9]/g, function(w) {
+                return arabicDigits[+w];
+            });
+        }
+
+        function toggleLanguage() {
+            gameState.language = gameState.language === 'en' ? 'ar' : 'en';
+            document.body.className = gameState.language;
+            updateStaticTexts();
+            updateDynamicTexts();
+            
+            // Update visible numbers immediately on language switch
+            document.getElementById('order-number').innerText = toLocalNumber(gameState.targetNumber);
+            document.getElementById('prod-count').innerText = toLocalNumber(gameState.currentCount);
+            document.getElementById('prod-target').innerText = toLocalNumber(gameState.targetNumber);
+            
+            if (document.getElementById('screen-check').classList.contains('active') && !gameState.isChecking) {
+                const buttons = document.querySelectorAll('#answer-buttons .btn-option');
+                buttons.forEach(btn => {
+                    // Reverse engineer the number from english/arabic to apply the correct current locale
+                    const enNum = btn.innerText.replace(/[٠-٩]/g, function(w) {
+                        return ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'].indexOf(w);
+                    });
+                    btn.innerText = toLocalNumber(enNum);
+                });
+            }
+        }
+
+        function updateStaticTexts() {
+            const t = translations[gameState.language];
+            document.getElementById('title-text').innerHTML = t.title;
+            document.getElementById('welcome-text').innerText = t.welcome;
+            document.getElementById('btn-play').innerText = t.play;
+            document.getElementById('order-speech').innerText = t.newOrder;
+            document.getElementById('order-title').innerText = t.orderTitle;
+            document.getElementById('btn-start-order').innerText = t.startOrder;
+            document.getElementById('tap-speech').innerText = t.tapCollect;
+            document.getElementById('box-front').innerText = t.box;
+            document.getElementById('success-title').innerText = t.greatJob;
+            document.getElementById('btn-lang').innerText = t.langBtn;
+            document.getElementById('slash-text').innerText = t.slash;
+        }
+
+        function updateDynamicTexts() {
+            if (!gameState.emojiName) return; // Prevent running before level is setup
+            
+            const t = translations[gameState.language];
+            const itemName = t.items[gameState.emojiName];
+            const localizedNumber = toLocalNumber(gameState.targetNumber);
+
+            // Order Screen
+            let orderTxt = (gameState.level === 3) ? t.challengeOrder : t.makeOrder;
+            orderTxt = orderTxt.replace('{n}', localizedNumber).replace('{item}', itemName);
+            document.getElementById('order-text').innerText = orderTxt;
+            
+            // Check Screen
+            if(!gameState.isChecking) {
+                document.getElementById('check-speech').innerHTML = t.checkOrder.replace('{item}', itemName);
+            }
+
+            // Success Screen
+            if (gameState.level === 3) {
+                document.getElementById('success-message').innerHTML = t.masterBuilder;
+                document.getElementById('btn-next-level').innerText = t.playAgain;
+            } else {
+                document.getElementById('success-message').innerHTML = t.orderComplete;
+                document.getElementById('btn-next-level').innerText = t.nextOrder;
+            }
+        }
+
+        // Init language on load
+        window.onload = () => {
+            updateStaticTexts();
+        };
+
+        // Navigation
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        function updateDots() {
+            for(let i=1; i<=3; i++) {
+                const dot = document.getElementById(`dot-${i}`);
+                dot.className = 'dot';
+                if (i < gameState.level) dot.classList.add('completed');
+                else if (i === gameState.level) dot.classList.add('active');
+            }
+        }
+
+        // Game Flow
+        function startGame() {
+            gameState.level = 1;
+            setupLevel();
+        }
+
+        function restartGame() {
+            gameState.level = 1;
+            setupLevel();
+        }
+
+        function nextLevel() {
+            if (gameState.level >= 3) {
+                gameState.level = 1;
+            } else {
+                gameState.level++;
+            }
+            setupLevel();
+        }
+
+        function setupLevel() {
+            gameState.currentCount = 0;
+            updateDots();
+            
+            if (gameState.level === 1) gameState.targetNumber = Math.floor(Math.random() * 3) + 1;
+            else if (gameState.level === 2) gameState.targetNumber = Math.floor(Math.random() * 3) + 4;
+            else gameState.targetNumber = 7;
+
+            const obj = objectsPool[Math.floor(Math.random() * objectsPool.length)];
+            gameState.currentEmoji = obj.emoji;
+            gameState.emojiName = obj.name;
+
+            document.getElementById('order-number').innerText = toLocalNumber(gameState.targetNumber);
+            document.getElementById('order-emoji').innerText = gameState.currentEmoji;
+            
+            if (gameState.level === 3) {
+                document.getElementById('order-number').style.color = '#e74c3c';
+            } else {
+                document.getElementById('order-number').style.color = '#3b82f6';
+            }
+
+            updateDynamicTexts();
+            showScreen('screen-order');
+        }
+
+        function startProduction() {
+            showScreen('screen-produce');
+            
+            document.getElementById('prod-count').innerText = toLocalNumber(0);
+            document.getElementById('prod-target').innerText = toLocalNumber(gameState.targetNumber);
+            document.getElementById('box-items-container').innerHTML = '';
+            
+            const conveyor = document.getElementById('conveyor-items');
+            conveyor.innerHTML = '';
+            
+            const totalToSpawn = gameState.targetNumber + 6;
+            
+            for(let i=0; i<totalToSpawn; i++) {
+                const el = document.createElement('div');
+                el.className = 'tap-object';
+                el.innerText = gameState.currentEmoji;
+                
+                el.onpointerdown = (e) => {
+                    e.preventDefault();
+                    handleItemTap(el);
+                };
+                
+                conveyor.appendChild(el);
+            }
+        }
+
+        function handleItemTap(element) {
+            if (gameState.currentCount >= gameState.targetNumber) return;
+            if (element.classList.contains('collected')) return;
+            
+            element.classList.add('collected');
+
+            gameState.currentCount++;
+            document.getElementById('prod-count').innerText = toLocalNumber(gameState.currentCount);
+
+            const boxContainer = document.getElementById('box-items-container');
+            const boxItem = document.createElement('div');
+            boxItem.className = 'box-item';
+            boxItem.innerText = gameState.currentEmoji;
+            boxContainer.appendChild(boxItem);
+
+            if (gameState.currentCount === gameState.targetNumber) {
+                setTimeout(() => {
+                    startQualityCheck();
+                }, 1000);
+            }
+        }
+
+        function startQualityCheck() {
+            showScreen('screen-check');
+            gameState.isChecking = true;
+            
+            updateDynamicTexts();
+            
+            const checkContainer = document.getElementById('check-items-container');
+            checkContainer.innerHTML = '';
+            for(let i=0; i<gameState.targetNumber; i++) {
+                const item = document.createElement('div');
+                item.className = 'check-item';
+                item.innerText = gameState.currentEmoji;
+                checkContainer.appendChild(item);
+            }
+
+            const answers = new Set([gameState.targetNumber]);
+            let possibleWrongs = [];
+            
+            if (gameState.targetNumber === 7) possibleWrongs = [5, 6, 8, 9];
+            else if (gameState.targetNumber === 1) possibleWrongs = [2, 3, 4];
+            else if (gameState.targetNumber === 2) possibleWrongs = [1, 3, 4, 5];
+            else possibleWrongs = [gameState.targetNumber - 1, gameState.targetNumber - 2, gameState.targetNumber + 1, gameState.targetNumber + 2];
+            
+            possibleWrongs.sort(() => Math.random() - 0.5);
+            answers.add(possibleWrongs[0]);
+            let index = 1;
+            while(answers.size < 3 && index < possibleWrongs.length) {
+                answers.add(possibleWrongs[index]);
+                index++;
+            }
+
+            const answersArray = Array.from(answers).sort(() => Math.random() - 0.5);
+            
+            const btnContainer = document.getElementById('answer-buttons');
+            btnContainer.innerHTML = '';
+            answersArray.forEach(num => {
+                const btn = document.createElement('button');
+                btn.className = 'btn-option';
+                btn.innerText = toLocalNumber(num);
+                btn.onclick = () => {
+                    handleAnswer(num);
+                };
+                btnContainer.appendChild(btn);
+            });
+        }
+
+        function handleAnswer(selectedNumber) {
+            if (!gameState.isChecking) return;
+            const t = translations[gameState.language];
+            const itemName = t.items[gameState.emojiName];
+
+            if (selectedNumber === gameState.targetNumber) {
+                gameState.isChecking = false;
+                document.getElementById('check-speech').innerHTML = t.excellent.replace('{n}', toLocalNumber(gameState.targetNumber)).replace('{item}', itemName);
+                
+                setTimeout(() => {
+                    showSuccessScreen();
+                }, 1500);
+
+            } else {
+                document.getElementById('check-speech').innerHTML = t.countTogether;
+                
+                gameState.isChecking = false;
+                const items = document.querySelectorAll('.check-item');
+                let delay = 0;
+                
+                items.forEach((item, index) => {
+                    setTimeout(() => {
+                        item.classList.add('highlighted');
+                        document.getElementById('check-speech').innerHTML = toLocalNumber(index + 1);
+                        
+                        setTimeout(() => item.classList.remove('highlighted'), 800);
+                    }, delay);
+                    delay += 1000;
+                });
+
+                setTimeout(() => {
+                    document.getElementById('check-speech').innerHTML = t.checkOrder.replace('{item}', itemName);
+                    gameState.isChecking = true;
+                }, delay + 500);
+            }
+        }
+
+        function showSuccessScreen() {
+            updateDynamicTexts();
+            showScreen('screen-success');
+            createConfetti();
+        }
+
+        function createConfetti() {
+            const container = document.getElementById('confetti-container');
+            container.innerHTML = '';
+            const colors = ['#FF6B6B', '#4ECDC4', '#FFE66D', '#3498db', '#9b59b6'];
+            
+            for(let i=0; i<50; i++) {
+                const conf = document.createElement('div');
+                conf.className = 'confetti';
+                conf.style.left = Math.random() * 100 + '%';
+                conf.style.top = '-10px';
+                conf.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                
+                const duration = Math.random() * 2 + 2;
+                const delay = Math.random() * 1;
+                
+                conf.animate([
+                    { transform: `translate3d(0,0,0) rotate(0deg)`, opacity: 1 },
+                    { transform: `translate3d(${Math.random()*100 - 50}px, 100vh, 0) rotate(${Math.random()*360}deg)`, opacity: 0 }
+                ], {
+                    duration: duration * 1000,
+                    delay: delay * 1000,
+                    easing: 'cubic-bezier(.37,0,.63,1)',
+                    fill: 'forwards'
+                });
+                
+                container.appendChild(conf);
+            }
+        }
+
+    </script>
+</body>
+</html>
